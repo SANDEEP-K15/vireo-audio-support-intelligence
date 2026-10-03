@@ -1,0 +1,98 @@
+# Vireo Audio support digest — configuration.
+# Business constants cite their source (support-policy.pdf v3.2 section, or email-thread.txt).
+# Business logic lives in vireo/*.py; nothing below is a computed result.
+
+paths:
+  raw_dir: data/raw          # unmodified copies of the 8 assignment files (checksums in data/SOURCE_SHA256.txt)
+  gold_dir: data/gold        # human-labelled evaluation files
+  cache_dir: cache           # classification cache + API usage log (JSONL, no database)
+  out_dir: out               # generated reports and CSVs
+
+policy:
+  sla_target_minutes: {chat: 15, voice: 120, social: 240, email: 480}   # §3
+  breach_credit_inr: 350                                                # §3
+  contact_cost_inr: {chat: 210, email: 260, voice: 520, social: 240}    # §4
+  blended_contact_cost_inr: 290                                         # §4 (Priya, 9 Sep)
+  finance_quoted_contact_cost_inr: 180                                  # Arjun, 8 Sep (sensitivity only)
+  transfer_cost_inr: 305                                                # §4
+  repeat_window_days: 30                                                # §10
+  legacy_resolved_utc_offset_minutes: 330                               # §9: legacy event log stores UTC; IST = UTC+5:30
+  migration_date: "2025-09-14"                                          # §9
+
+digest:
+  default_week_start: "2026-06-22"     # latest full Monday-Sunday week in the export
+  trailing_weeks: 4
+  trailing_12m: ["2025-07-01", "2026-06-30"]
+  illustrative_reduction_pcts: [10, 25]
+
+ai:
+  provider: gemini                     # anthropic | gemini   (DECISIONS.md D-6; key read from ANTHROPIC_API_KEY / GEMINI_API_KEY)
+  gemini_tier: free                    # observed 2026-10-03 (429 quota id ...-FreeTier); drives the data-use disclosure (D-6/D-8)
+  prompt_version: "v1"
+  # Cheapest-first ladder per provider (PRD §13.1 as amended by D-6). Only the active provider's ladder is used.
+  model_ladders:
+    anthropic: [claude-haiku-4-5, claude-sonnet-5-5, claude-opus-5-5]
+    gemini: [gemini-3.5-flash-lite, gemini-3.8-flash, gemini-3.1-pro-preview]
+  models:
+    # Anthropic list prices, USD per 1M tokens, cached 2026-09-25.
+    claude-haiku-4-5:  {provider: anthropic, input_usd_per_mtok: 1.0, output_usd_per_mtok: 5.0,  max_tokens: 256,  effort: null}
+    claude-sonnet-5-5: {provider: anthropic, input_usd_per_mtok: 2.0, output_usd_per_mtok: 10.0, max_tokens: 4000, effort: low}
+    claude-opus-5-5:   {provider: anthropic, input_usd_per_mtok: 4.0, output_usd_per_mtok: 20.0, max_tokens: 4000, effort: low}
+    # Gemini API paid-tier prices, USD per 1M tokens (text), ai.google.dev/gemini-api/docs/pricing, page updated
+    # 2026-10-01. Output price includes thinking tokens; thinking is set to minimal. max_tokens = max_output_tokens.
+    gemini-3.5-flash-lite:  {provider: gemini, input_usd_per_mtok: 0.30, output_usd_per_mtok: 2.50,  max_tokens: 1024, thinking_level: minimal}
+    gemini-3.8-flash:       {provider: gemini, input_usd_per_mtok: 0.75, output_usd_per_mtok: 3.75,  max_tokens: 1024, thinking_level: minimal,
+                             price_valid_until: "2026-12-31"}     # promotional price; increases 2027-01-01 (amount not published)
+    gemini-3.1-pro-preview: {provider: gemini, input_usd_per_mtok: 2.00, output_usd_per_mtok: 12.00, max_tokens: 4000, thinking_level: minimal}
+  gemini_http:                         # google-genai SDK transport. SDK retries are DISABLED (retry_options=None):
+    timeout_ms: 60000                  # the adapter is the single retry layer, so retries cannot multiply (D-7)
+  gemini_rate_limit:                   # client-side pacing + 429 handling in vireo/providers.py (DECISIONS.md D-7)
+    requests_per_minute: 15            # GenerateRequestsPerMinutePerProject-FreeTier for gemini-3.5-flash-lite (429 on 2026-10-03)
+    safety_margin: 2                   # pace at 13 request starts per rolling window, below the quota
+    window_s: 61                       # rolling window; 1 s longer than a minute to absorb clock skew
+    max_429_retries: 4                 # per request; each waits max(RetryInfo.retryDelay, backoff), all workers paused
+    backoff_initial_s: 5               # 429/5xx backoff without RetryInfo: 5, 10, 20, 40 s ... capped at max_wait_s
+    max_wait_s: 120
+    transient_status_codes: [500, 502, 503, 504]
+    transient_retries: 3               # 5xx and network transport errors
+  concurrency: 4                       # worker threads; total request rate is bounded by gemini_rate_limit, not by this
+  smoke_test_size: 20
+  smoke_test_seed: 7
+  max_new_tickets_per_run: 1000        # per-command guard; the backfill command raises it to the gated scope size
+  max_usd_per_run: 5.0                 # per-command guard (backfill uses max_usd_backfill instead)
+  max_usd_backfill: 30.0               # PRD D4 — set by the client on 2026-10-03
+  backfill_max_runtime_minutes: 45     # remaining time slot in the 5-hour plan (PRD §24)
+  first_call_cost_estimate_usd: 0.01   # conservative reservation before any cost has been measured
+  usd_inr_rate: null                   # PRD D3: AI cost is reported in USD until Finance supplies a rate
+
+evaluation:
+  gold_size: 120
+  gold_seed: 20260622
+  min_per_theme: 3
+  accuracy_threshold: 0.85
+  family_min_accuracy: 0.70
+  repeat_recall_threshold: 0.80
+  repeat_precision_threshold: 0.80
+  repeat_precision_sample: 30
+  stability_sample: 50
+
+# Discovery baselines for THIS export (PRD §7, A2/A3). They are checked against values the
+# pipeline computes from source data; they are never used as outputs. Set strict: false for a new export.
+assertions:
+  strict: true
+  raw_ticket_rows: 12528
+  raw_ticket_columns: 21
+  duplicated_ticket_ids: 653
+  clean_ticket_rows: 11875
+  raw_legacy_resolved_before_created: 2263   # before the +5:30 fix, raw export legacy rows
+  raw_order_link_direct: 8310                # order-link counts on raw export rows (as measured in discovery)
+  raw_order_link_fallback_unique: 3467
+  raw_order_link_ambiguous: 751
+  raw_order_link_unmatched: 0
+  order_link_ambiguous: 720                  # after dedup = the reported figure (DECISIONS.md D-2); 751 raw rows above
+  tickets_before_order_date: 232             # after dedup, direct order_id links (discovery basis)
+  fallback_linked_before_order_date: 94      # after dedup, fallback links (DECISIONS.md D-1); 326 flagged in total
+  open_or_pending: 609                       # after dedup
+  agents: 44
+  breach_credits_total: 992                  # A3, attended tickets, 18 months
+  attended_helpdesk_transfers_total: 817     # A3

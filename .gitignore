@@ -1,0 +1,29 @@
+# --- secrets / credentials (never commit) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- local environment and tool caches ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- assignment dataset and ticket-text files: NOT published (public repo) ---
+# Place the 8 assignment files in data/raw/ locally (see README "Data"); verify with data/SOURCE_SHA256.txt.
+data/raw/*
+!data/raw/.gitkeep
+# human gold labels and the pair review contain ticket text excerpts; their SHA-256 lock is published instead
+data/gold/gold_tickets.csv
+data/gold/repeat_pairs_review.csv
+
+# out/ (digest, memo, evaluation, CSVs) and cache/ (labels, token usage, cost; no ticket text) ARE tracked
+# so reviewers can read the deliverables and rebuild the digest offline without API calls.

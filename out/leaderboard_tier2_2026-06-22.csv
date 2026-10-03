@@ -1,0 +1,7 @@
+agent_id,name,site,shift,week_cases,prev4w_cases,median_days_to_resolve_week,median_days_to_resolve_prev4w
+A3039,Vivaan Kulkarni,Indore,Morning,1,7,12.1,8.2
+A3040,Sai Sharma,Bengaluru,Day,3,13,8.3,5.1
+A3041,Deepak Mathew,Indore,Morning,2,6,8.2,4.6
+A3042,Aishwarya Kaur,Bengaluru,Morning,2,6,6.1,7.1
+A3043,Rahul Gupta,Bengaluru,Morning,1,10,4.2,3.2
+A3044,Meera Joshi,Indore,Day,2,15,2.1,4.1

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vireo Support Digest {{ week_start }}</title>
+<style>
+:root { --bg:#fff; --fg:#1d1d1f; --muted:#5f6368; --line:#dadce0; --panel:#f6f7f9; --warn:#8a4b00; --warnbg:#fff4e0; --ok:#1e6b3a; }
+@media (prefers-color-scheme: dark) { :root { --bg:#141517; --fg:#e8eaed; --muted:#a0a4a8; --line:#3a3d41; --panel:#1e2023; --warn:#ffcf8a; --warnbg:#3a2c12; --ok:#7fd49b; } }
+body { background:var(--bg); color:var(--fg); font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; margin:0; padding:24px 16px; }
+main { max-width:1100px; margin:0 auto; }
+h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:17px; margin:32px 0 8px; border-bottom:1px solid var(--line); padding-bottom:4px; }
+h3 { font-size:15px; margin:18px 0 6px; }
+.muted { color:var(--muted); } .small { font-size:12px; }
+.panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin:8px 0; }
+.warn { background:var(--warnbg); color:var(--warn); border-radius:8px; padding:10px 14px; margin:8px 0; }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
+.kpi .v { font-size:22px; font-weight:600; } .kpi .l { color:var(--muted); font-size:12px; }
+.scroll { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:6px 0 10px; font-variant-numeric:tabular-nums; }
+th, td { border-bottom:1px solid var(--line); padding:5px 8px; text-align:left; vertical-align:top; }
+th { font-weight:600; color:var(--muted); font-size:12px; } td.n, th.n { text-align:right; }
+code { font-size:12px; }
+</style>
+</head>
+<body><main>
+{% macro inr(v) %}{% if v is none %}not computed{% else %}Rs {{ "{:,}".format(v) }}{% endif %}{% endmacro %}
+{% macro rep_block(r) %}{% if r.computed %}{{ r.count }} · Rs {{ "{:,}".format(r.cost_inr) }}{% else %}not computed{% endif %}{% endmacro %}
+{% macro cov(r) %}<br><span class="small">coverage: {{ r.coverage.b_classified }}/{{ r.coverage.b_tickets }} tickets, {{ r.coverage.candidate_pairs_classified }}/{{ r.coverage.candidate_pairs }} candidate prior-ticket pairs classified</span>{% endmacro %}
+
+<!-- 1. Header -->
+<h1>Vireo Audio — weekly support digest</h1>
+<div class="muted">Week {{ week_start.strftime('%a %d %b %Y') }} – {{ week_end.strftime('%a %d %b %Y') }} (Mon–Sun IST) · export covers {{ data_range[0] }} – {{ data_range[1] }}</div>
+<div class="panel small">
+Run {{ run_ts }} · provider <code>{{ provider }}</code> · model <code>{{ model }}</code> · prompt <code>{{ prompt_version }}</code> ·
+classification scope: <b>{{ scope }}</b> · coverage {{ "{:,}".format(classified_total) }} / {{ "{:,}".format(tickets_total) }} tickets ({{ "%.0f"|format(100*classified_total/tickets_total) }}%), this week {{ "%.0f"|format(100*week_coverage) }}% ·
+AI spend to date ${{ "%.4f"|format(spend_total) }} · projected monthly AI cost {% if monthly_usd is none %}not measured yet{% else %}${{ "%.2f"|format(monthly_usd) }}{% endif %}<br>
+Week assignment: incoming volume, complaint themes and repeat contacts use <b>created_at</b>; tickets closed, SLA breach credits, transfers and CSAT use <b>resolved_at</b>. {{ partial_week_note }}
+</div>
+{% if not validated %}<div class="warn"><b>AI labels not validated.</b> No model has passed the human gold-set evaluation yet, so any theme or repeat figure below is unvalidated.</div>{% endif %}
+
+<!-- 2. Repeat contacts -->
+<h2>1. Repeat contacts (primary KPI)</h2>
+<p class="small muted">Same customer, same product SKU, same AI issue theme, created within 30 days after the earlier ticket was resolved (support policy §10). Costed at the channel cost of the repeat contact (§4).</p>
+<div class="kpis">
+  <div class="panel kpi"><div class="v">{{ rep_block(rep_week) }}</div><div class="l">Repeat contacts · cost, this week (created week){{ cov(rep_week) }}</div></div>
+  <div class="panel kpi"><div class="v">{% if rep_prev_avg is none %}not computed{% else %}{{ rep_prev_avg }} / week{% endif %}</div><div class="l">Average of previous {{ trailing_weeks }} weeks{{ cov(rep_prev) }}</div></div>
+  <div class="panel kpi"><div class="v">{{ rep_block(rep_12m) }}</div><div class="l">Trailing 12 months (Jul 2025 – Jun 2026){{ cov(rep_12m) }}</div></div>
+  <div class="panel kpi"><div class="v">{{ rep_block(rep_all) }}</div><div class="l">Full export (18 months){{ cov(rep_all) }}</div></div>
+</div>
+{% if rep_week.computed %}
+<div class="scroll"><table><tr><th>Channel</th><th class="n">Repeat contacts</th><th class="n">Cost (policy §4 rate)</th></tr>
+{% for ch, v in rep_week.by_channel.items() %}<tr><td>{{ ch }}</td><td class="n">{{ v.count }}</td><td class="n">{{ inr(v.inr) }}</td></tr>{% endfor %}
+</table></div>
+<p class="small muted">Excluded pairs where a theme is OTHER_UNCLEAR: {{ rep_week.excluded_other_unclear_pairs }} · without the same-SKU condition: {{ rep_week.without_sku_condition if rep_week.without_sku_condition is not none else "not computed" }} · repeat ticket IDs: {{ rep_week.repeat_ticket_ids|join(", ") or "none" }}</p>
+{% endif %}
+
+<!-- 3. Repeat drivers -->
+<h2>2. Repeat drivers</h2>
+{% set drv = rep_week if rep_week.computed else none %}
+{% if drv and drv.drivers_theme %}
+<div class="scroll"><table><tr><th>Theme</th><th class="n">Repeat contacts this week</th><th class="n">Cost</th></tr>
+{% for r in drv.drivers_theme %}<tr><td>{{ label_of(r.theme_b) }}</td><td class="n">{{ r.count }}</td><td class="n">{{ inr(r.inr|int) }}</td></tr>{% endfor %}</table></div>
+<h3>Top theme × product</h3>
+<div class="scroll"><table><tr><th>Theme</th><th>SKU</th><th class="n">Count</th><th class="n">Cost</th></tr>
+{% for r in drv.drivers_theme_sku %}<tr><td>{{ label_of(r.theme_b) }}</td><td>{{ r.product_sku }}</td><td class="n">{{ r.count }}</td><td class="n">{{ inr(r.inr|int) }}</td></tr>{% endfor %}</table></div>
+{% if rep_12m.computed %}<h3>Context: trailing-12-month drivers</h3>
+<div class="scroll"><table><tr><th>Theme</th><th class="n">Count</th><th class="n">Cost</th></tr>
+{% for r in rep_12m.drivers_theme[:10] %}<tr><td>{{ label_of(r.theme_b) }}</td><td class="n">{{ r.count }}</td><td class="n">{{ inr(r.inr|int) }}</td></tr>{% endfor %}</table></div>{% endif %}
+{% else %}<p class="muted">Not computed for this week (see coverage above) or no repeat contacts.</p>{% endif %}
+
+<!-- 4. Complaint themes -->
+<h2>3. Complaint themes this week</h2>
+{% if theme_rows %}
+<div class="scroll"><table><tr><th>Theme</th><th class="n">Tickets this week</th><th class="n">Prev {{ trailing_weeks }}-week avg</th><th class="n">Change</th></tr>
+{% for r in theme_rows %}<tr><td>{{ r.label }}</td><td class="n">{{ r.count }}</td><td class="n">{{ r.prev_avg if r.prev_avg is not none else "not computed" }}</td><td class="n">{% if r.change is not none %}{{ "%+.1f"|format(r.change) }}{% endif %}</td></tr>{% endfor %}</table></div>
+<p class="small muted">Intake-bot “Other” tickets this week: {{ reclass.bot_other }}; assigned a specific theme by the classifier: {{ reclass.reclassified }}.</p>
+{% else %}<p class="muted">Not computed: {{ "%.0f"|format(100*week_coverage) }}% of this week's tickets are classified.</p>{% endif %}
+
+<!-- 5. Secondary KPIs -->
+<h2>4. Secondary KPIs (deterministic)</h2>
+<div class="kpis">
+  <div class="panel kpi"><div class="v">{{ volume_total }}</div><div class="l">Incoming tickets (created week)</div></div>
+  <div class="panel kpi"><div class="v">{{ breach.count }} · {{ inr(breach.inr) }}</div><div class="l">SLA breach credits, Rs {{ policy.breach_credit_inr }} each (resolved week, §3)</div></div>
+  <div class="panel kpi"><div class="v">{{ transfers.count }} · {{ inr(transfers.inr) }}</div><div class="l">Transfers, Rs {{ policy.transfer_cost_inr }} each, helpdesk (resolved week, §4)</div></div>
+  <div class="panel kpi"><div class="v">{{ csat.mean if csat.mean is not none else "–" }}</div><div class="l">CSAT mean (n={{ csat.n }}, response rate {{ "%.0f"|format(100*(csat.response_rate or 0)) }}%, resolved week)</div></div>
+</div>
+<div class="scroll"><table><tr><th>Channel</th><th class="n">Incoming</th><th class="n">SLA target (min)</th><th class="n">Breach credits</th><th class="n">Credit cost</th></tr>
+{% for ch in ["chat","email","voice","social"] %}<tr><td>{{ ch }}</td><td class="n">{{ volume[ch] }}</td><td class="n">{{ policy.sla_target_minutes[ch] }}</td><td class="n">{{ breach.by_channel.get(ch, {}).get("count", 0) }}</td><td class="n">{{ inr(breach.by_channel.get(ch, {}).get("inr", 0)) }}</td></tr>{% endfor %}</table></div>
+<p class="small muted">Transfers still open (not final, whole export): {{ transfers.not_yet_final_open_tickets }} · legacy tickets with unknown transfers in this period: {{ transfers.legacy_tickets_unknown }}.</p>
+
+<!-- 6. Leaderboard -->
+<h2>5. {{ board.title }}</h2>
+<div class="warn small">{{ board.caption }}</div>
+{% for team, d in board.tier1.items() %}
+<h3>{{ team }} <span class="muted small">· team median handle time this week: {{ d.team_median_handle_h if d.team_median_handle_h is not none else "–" }} h</span></h3>
+<div class="scroll"><table><tr><th class="n">Rank in team</th><th>Agent</th><th>Site</th><th>Shift</th><th class="n">Closed this week</th><th class="n">of which auto-closed</th><th class="n">of which outside roster team</th><th class="n">Closed in previous {{ trailing_weeks }} weeks</th></tr>
+{% for r in d.rows %}<tr><td class="n">{{ r.rank_in_team }}</td><td>{{ r.name }} <span class="muted small">{{ r.agent_id }}</span></td><td>{{ r.site }}</td><td>{{ r.shift }}</td><td class="n">{{ r.week_closed }}</td><td class="n">{{ r.week_auto_closed }}</td><td class="n">{{ r.week_off_roster_team }}</td><td class="n">{{ r["prev%dw_closed"|format(trailing_weeks)] }}</td></tr>{% endfor %}</table></div>
+{% endfor %}
+<h3>Tier 2 — Escalations &amp; Warranty (not ranked; sorted by agent ID)</h3>
+<div class="scroll"><table><tr><th>Agent</th><th>Site</th><th>Shift</th><th class="n">Cases this week</th><th class="n">Median days to resolve (week)</th><th class="n">Cases in previous {{ trailing_weeks }} weeks</th><th class="n">Median days to resolve (previous {{ trailing_weeks }} weeks)</th></tr>
+{% for r in board.tier2 %}<tr><td>{{ r.name }} <span class="muted small">{{ r.agent_id }}</span></td><td>{{ r.site }}</td><td>{{ r.shift }}</td><td class="n">{{ r.week_cases }}</td><td class="n">{{ r.median_days_to_resolve_week if r.median_days_to_resolve_week is not none else "–" }}</td><td class="n">{{ r["prev%dw_cases"|format(trailing_weeks)] }}</td><td class="n">{{ r["median_days_to_resolve_prev%dw"|format(trailing_weeks)] if r["median_days_to_resolve_prev%dw"|format(trailing_weeks)] is not none else "–" }}</td></tr>{% endfor %}</table></div>
+
+<!-- 7. Business impact and AI cost -->
+<h2>6. Business impact and AI cost</h2>
+<div class="scroll"><table>
+<tr><th>Line (kept separate — not summed)</th><th class="n">This week</th><th class="n">Trailing 12 months</th><th class="n">18 months</th></tr>
+<tr><td>Repeat-contact cost, channel rates (§4/§10) — headline</td><td class="n">{{ inr(rep_week.cost_inr if rep_week.computed else none) }}</td><td class="n">{{ inr(rep_12m.cost_inr if rep_12m.computed else none) }}</td><td class="n">{{ inr(rep_all.cost_inr if rep_all.computed else none) }}</td></tr>
+<tr><td>Sensitivity: repeat count × Rs {{ policy.blended_contact_cost_inr }} blended (§4)</td><td class="n">{{ inr(rep_week.sensitivity_blended_inr if rep_week.computed else none) }}</td><td class="n">{{ inr(rep_12m.sensitivity_blended_inr if rep_12m.computed else none) }}</td><td class="n">{{ inr(rep_all.sensitivity_blended_inr if rep_all.computed else none) }}</td></tr>
+<tr><td>Sensitivity: repeat count × Rs {{ policy.finance_quoted_contact_cost_inr }} (Finance, 8 Sep)</td><td class="n">{{ inr(rep_week.sensitivity_finance_inr if rep_week.computed else none) }}</td><td class="n">{{ inr(rep_12m.sensitivity_finance_inr if rep_12m.computed else none) }}</td><td class="n">{{ inr(rep_all.sensitivity_finance_inr if rep_all.computed else none) }}</td></tr>
+<tr><td>SLA breach credits (§3)</td><td class="n">{{ inr(breach.inr) }}</td><td class="n" colspan="2">see data-quality section for the 18-month total</td></tr>
+</table></div>
+{% for s in scenarios %}<p class="panel small">{{ s }}</p>{% else %}<p class="small muted">Illustrative scenario not shown: trailing-12-month repeat cost not computed.</p>{% endfor %}
+<p class="small muted">{{ no_claim_note }}</p>
+<h3>AI cost (measured, USD{% if fx %}; INR at {{ fx }}{% endif %})</h3>
+<div class="scroll"><table><tr><th>Purpose</th><th class="n">Spend to date (USD)</th></tr>
+{% for k, v in spend.items() %}<tr><td>{{ k }}</td><td class="n">${{ "%.4f"|format(v) }}</td></tr>{% else %}<tr><td colspan="2" class="muted">No API calls recorded yet.</td></tr>{% endfor %}</table></div>
+<p class="small muted">Mean measured cost per classified ticket ({{ model }}): {% if mean_cost_per_ticket is none %}not measured yet{% else %}${{ "%.5f"|format(mean_cost_per_ticket) }}{% endif %}. Projected monthly cost = mean cost per ticket × mean weekly tickets (previous {{ trailing_weeks }} full weeks) × 52 / 12.
+{% if backfill %}Backfill gate: {{ backfill.gate.reasons|join("; ") }}.{% endif %}</p>
+
+<!-- 8. Evaluation summary -->
+<h2>7. Evaluation summary</h2>
+{% if selection %}
+<div class="scroll"><table><tr><th>Model (cheapest first)</th><th class="n">Accuracy</th><th class="n">Macro-F1</th><th>Passed</th><th class="n">Cost / ticket</th><th>Why not passed</th></tr>
+{% for r in selection.ladder %}<tr><td>{{ r.model }}</td><td class="n">{{ "%.1f"|format(100*r.scores.accuracy) }}%</td><td class="n">{{ "%.3f"|format(r.scores.macro_f1) }}</td><td>{{ "yes" if r.passed else "no" }}</td><td class="n">${{ "%.5f"|format(r.cost_per_ticket or 0) }}</td><td class="small">{{ r.why|join("; ") }}</td></tr>{% endfor %}</table></div>
+<p class="small muted">Thresholds: accuracy ≥ {{ "%.0f"|format(100*eval_thresholds.accuracy_threshold) }}%, every family ≥ {{ "%.0f"|format(100*eval_thresholds.family_min_accuracy) }}%. Gold set: {{ selection.gold_n }} human-labelled tickets. Full report: <code>out/eval/eval_report.md</code>.</p>
+{% else %}<div class="warn">Gold-set evaluation has not been run (requires the human-labelled <code>data/gold/gold_tickets.csv</code>).</div>{% endif %}
+<p>Repeat recall (validation proxy — customer-declared in-window repeats, not perfect ground truth):
+{% if recall and recall.recall is not none %}<b>{{ "%.1f"|format(100*recall.recall) }}%</b> ({{ recall.flagged }}/{{ recall.reference_n }}){% else %}not computed{% endif %} ·
+{% if precision %}Repeat precision (human review of {{ precision.sample }} flagged pairs{% if precision.sample < eval_thresholds.repeat_precision_sample %} — the complete flagged population available under the digest scope; target was {{ eval_thresholds.repeat_precision_sample }}{% endif %}):{% else %}Repeat precision (human review of up to {{ eval_thresholds.repeat_precision_sample }} flagged pairs):{% endif %}
+{% if precision and precision.precision is not none %}<b>{{ "%.1f"|format(100*precision.precision) }}%</b> ({{ precision.reviewed }} reviewed){% else %}not reviewed yet{% endif %}</p>
+
+<!-- 9. Data quality and limitations -->
+<h2>8. Data quality and limitations</h2>
+<div class="scroll"><table><tr><th>Check</th><th class="n">Value</th></tr>
+{% for k, v in dq.items() %}<tr><td>{{ k }}</td><td class="n">{{ v }}</td></tr>{% endfor %}</table></div>
+{% for w in warnings %}<div class="warn">{{ w }}</div>{% endfor %}
+<h3>Implementation discrepancies vs PRD baselines</h3>
+<ul>{% for d in discrepancies %}<li>{{ d }}</li>{% endfor %}</ul>
+{% if data_use %}<div class="warn"><b>Data-use disclosure.</b> {{ data_use }}</div>{% endif %}
+{% if scope_limitations %}<h3>Digest-scope limitations (not computed, never extrapolated)</h3>
+<ul>{% for l in scope_limitations %}<li>{{ l }}</li>{% endfor %}</ul>{% endif %}
+<h3>Known limitations</h3>
+<ul>{% for l in limitations %}<li>{{ l }}</li>{% endfor %}</ul>
+<h3>Deliberately out of scope</h3>
+<ul>{% for s in scope_cuts %}<li>{{ s }}</li>{% endfor %}</ul>
+<p class="small muted">Customer free text is never reproduced in this report. Ticket IDs are listed for drill-down in the helpdesk.</p>
+</main></body></html>

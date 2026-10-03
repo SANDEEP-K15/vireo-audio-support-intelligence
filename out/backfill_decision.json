@@ -1,0 +1,53 @@
+{
+ "model": "gemini-3.5-flash-lite",
+ "gate": {
+  "proceed_full": false,
+  "scope": "digest",
+  "validated": true,
+  "reasons": [
+   "full backfill projected $4.15 / 627.0 min exceeds caps ($30.00 / 45 min)"
+  ],
+  "projections": {
+   "full": {
+    "unclassified": 11736,
+    "cost_usd": 4.1486,
+    "runtime_min": 627.0,
+    "fits": false
+   },
+   "trailing_12m": {
+    "unclassified": 9541,
+    "cost_usd": 3.3727,
+    "runtime_min": 509.7,
+    "fits": false
+   },
+   "digest": {
+    "unclassified": 268,
+    "cost_usd": 0.0947,
+    "runtime_min": 14.3,
+    "fits": true
+   }
+  }
+ },
+ "unclassified_by_scope": {
+  "full": 11736,
+  "trailing_12m": 9541,
+  "digest": 268
+ },
+ "week": "2026-06-22",
+ "run": {
+  "run_id": "e8476e9b9b54",
+  "purpose": "backfill_digest",
+  "model": "gemini-3.5-flash-lite",
+  "requested": 268,
+  "cached": 0,
+  "classified": 268,
+  "skipped_budget": 0,
+  "skipped_rate_limited": 0,
+  "rate_limit_message": null,
+  "ai_errors": 0,
+  "cost_usd": 0.09604739999999996,
+  "wall_s": 1223.56,
+  "mean_cost_per_ticket": 0.00035838582089552226,
+  "mean_latency_s": 18.250996268656717
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "run_id": "8ef89f375d46",
+ "purpose": "smoke",
+ "model": "gemini-3.5-flash-lite",
+ "requested": 20,
+ "cached": 0,
+ "classified": 20,
+ "skipped_budget": 0,
+ "skipped_rate_limited": 0,
+ "rate_limit_message": null,
+ "ai_errors": 0,
+ "cost_usd": 0.0070699,
+ "wall_s": 64.11,
+ "mean_cost_per_ticket": 0.000353495,
+ "mean_latency_s": 12.703700000000001,
+ "provider": "gemini",
+ "valid_rate": 1.0,
+ "complete": true,
+ "wall_s_per_ticket": 3.2055,
+ "concurrency": 4
+}

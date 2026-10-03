@@ -1,0 +1,39 @@
+agent_id,name,site,shift,team,tier,week_closed,week_auto_closed,week_off_roster_team,prev4w_closed,prev4w_auto_closed,prev4w_off_roster_team,rank_in_team
+A3010,Om Varghese,Indore,Day,Chat Frontline,1,9,0,0,11,1,0,1
+A3001,Shreya Kumar,Indore,Night,Chat Frontline,1,6,1,4,14,4,9,2
+A3002,Zoya Srivastava,Indore,Night,Chat Frontline,1,4,0,3,18,3,10,3
+A3003,Rohit Yadav,Indore,Night,Chat Frontline,1,4,0,1,16,2,9,3
+A3006,Tenzin Saxena,Bengaluru,Morning,Chat Frontline,1,4,0,0,20,2,0,3
+A3012,Rahul Sen,Bengaluru,Morning,Chat Frontline,1,4,0,1,14,1,0,3
+A3004,Aishwarya Shinde,Bengaluru,Morning,Chat Frontline,1,3,0,1,19,2,0,7
+A3008,Manish Jain,Indore,Day,Chat Frontline,1,3,0,0,10,2,0,7
+A3014,Manpreet Iyer,Bengaluru,Day,Chat Frontline,1,3,1,0,17,2,0,7
+A3011,Kavya Goyal,Bengaluru,Morning,Chat Frontline,1,2,0,0,15,2,0,10
+A3005,Sameer Menon,Indore,Day,Chat Frontline,1,1,0,0,11,2,1,11
+A3007,Shreya Dhillon,Bengaluru,Day,Chat Frontline,1,1,0,1,11,0,0,11
+A3009,Sameer Agarwal,Bengaluru,Day,Chat Frontline,1,1,0,0,8,0,1,11
+A3013,Ayaan Dutta,Bengaluru,Day,Chat Frontline,1,1,0,0,11,4,0,11
+A3015,Faisal Pereira,Indore,Day,Chat Frontline,1,1,0,0,7,0,0,11
+A3021,Pooja Dhillon,Bengaluru,Day,Email Frontline,1,11,0,0,21,1,0,1
+A3016,Ayaan Pawar,Indore,Night,Email Frontline,1,8,1,6,17,3,9,2
+A3019,Kavya D'Souza,Bengaluru,Day,Email Frontline,1,8,1,1,26,2,2,2
+A3017,Kabir Mathew,Indore,Night,Email Frontline,1,5,0,3,17,2,7,4
+A3018,Sukhwinder Bose,Bengaluru,Morning,Email Frontline,1,5,1,2,8,0,1,4
+A3022,Yash Mittal,Bengaluru,Morning,Email Frontline,1,2,0,0,11,0,2,6
+A3020,Ankit Ansari,Bengaluru,Morning,Email Frontline,1,1,1,0,18,0,2,7
+A3023,Farah George,Indore,Day,Voice Frontline,1,4,0,1,12,0,0,1
+A3024,Mohammed Kaur,Indore,Day,Voice Frontline,1,3,0,0,11,0,0,2
+A3025,Riya Siddiqui,Bengaluru,Day,Voice Frontline,1,3,0,0,9,1,1,2
+A3026,Vihaan Dutta,Bengaluru,Day,Voice Frontline,1,2,0,0,15,1,0,4
+A3031,Aishwarya Agarwal,Indore,Day,Logistics,1,10,1,0,30,2,2,1
+A3028,Tarun Pereira,Bengaluru,Morning,Logistics,1,9,0,1,21,2,1,2
+A3029,Geeta Rathore,Indore,Day,Logistics,1,8,1,0,31,3,0,3
+A3027,Rajat Saxena,Indore,Morning,Logistics,1,7,0,1,29,2,2,4
+A3030,Gurpreet Kulkarni,Bengaluru,Morning,Logistics,1,3,0,0,24,4,2,5
+A3033,Diya Singh,Bengaluru,Day,Billing,1,10,1,0,32,1,2,1
+A3034,Manpreet Mukherjee,Indore,Morning,Billing,1,6,0,1,14,2,2,2
+A3032,Diya Malhotra,Bengaluru,Morning,Billing,1,5,1,0,17,3,2,3
+A3035,Mohammed Jadhav,Indore,Morning,Billing,1,1,0,1,10,0,1,4
+A3037,Vivaan Sethi,Bengaluru,Day,Returns Desk,1,11,0,0,27,1,1,1
+A3036,Saanvi Saxena,Bengaluru,Morning,Returns Desk,1,7,2,1,19,1,2,2
+A3038,Pooja Patil,Indore,Morning,Returns Desk,1,5,0,1,16,1,4,3
