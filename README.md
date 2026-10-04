@@ -427,17 +427,3 @@ D-6 amendment). Any further run should use a billing-enabled key.
 | D-7 | Client-side pacing and a single retry layer for the free-tier rate limit |
 | D-8 | Precision review covered the full flagged population of 25 pairs |
 
-## Current status
-
-| Done (3 Oct 2026) | Not done |
-|---|---|
-| Discovery, PRD, pipeline, 86 tests | Full 18-month backfill (projected 627 min, $4.15) |
-| Gold set labelled and locked; model selected on the first ladder rung | 12-month repeat baseline and week-over-week trends |
-| Smoke, evaluation and digest-scope backfill; 25-pair review | Billing-enabled re-run (removes the free-tier data-use issue and rate limit) |
-| Digest, CSVs, evaluation report and memo for 22–28 Jun 2026 | Any deployment or helpdesk integration |
-
-Acceptance criteria A5, A6 and A7 pass for the selected week.
-
-Development note: the code, tests and documentation were written with an AI coding assistant (Claude Code). Every
-figure is computed by the pipeline from the data. Elapsed time from receiving the files to the final documentation
-pass was about 4 h 20 min, including human labelling and review and the paced API runs.
